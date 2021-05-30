@@ -37,7 +37,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>etf.openpgp.pm170427dbn170597d.Main</mainClass>
+                            <mainClass>etf.openpgp.pm170427dbn170597d.Encryption</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
