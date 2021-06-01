@@ -21,40 +21,52 @@ import java.util.Date;
 
 public class KeyGenerator
 {
+	private final PGPKeyRingGenerator keyRingGenerator;
+
+	public KeyGenerator(String identity, String passphrase, int strength) throws PGPException
+	{
+		keyRingGenerator = generateKeyRingGenerator(identity, passphrase, strength);
+	}
+
 	public static void main(String[] args) throws Exception
 	{
 		Security.addProvider(new BouncyCastleProvider());
 
-		char pass[] = {'h', 'e', 'l', 'l', 'o'};
-		PGPKeyRingGenerator krgen = generateKeyRingGenerator
-				("mpeovic@example.com", pass, 0xc0);
+		String pass = "hello";
+
+		KeyGenerator generator = new KeyGenerator("mpeovic@telenor.rs", pass, 2048);
 
 		// Generate public key ring, dump to file.
-		PGPPublicKeyRing pkr = krgen.generatePublicKeyRing();
-		ArmoredOutputStream pubout = new ArmoredOutputStream(new FileOutputStream("public_key.asc"));
-		pkr.encode(pubout);
-		pubout.close();
+		PGPPublicKeyRing publicKeyRing = generator.getPublicKeyRing();
+		Util.saveKeyRingToFile(publicKeyRing, "public_key.asc");
 
 		// Generate private key, dump to file.
-		PGPSecretKeyRing skr = krgen.generateSecretKeyRing();
-		ArmoredOutputStream secout = new ArmoredOutputStream(new FileOutputStream("private_key.asc"));
-		skr.encode(secout);
-		secout.close();
+		PGPSecretKeyRing secretKeyRing = generator.getSecretKeyRing();
+		Util.saveKeyRingToFile(secretKeyRing, "private_key.asc");
+
+	}
+
+	public PGPSecretKeyRing getSecretKeyRing() {
+		return keyRingGenerator.generateSecretKeyRing();
+	}
+
+	public PGPPublicKeyRing getPublicKeyRing() {
+		return keyRingGenerator.generatePublicKeyRing();
 	}
 
 
-	public final static PGPKeyRingGenerator generateKeyRingGenerator(String id, char[] pass, int s2kcount) throws Exception
+	private final PGPKeyRingGenerator generateKeyRingGenerator(String id, String pass, int strength) throws PGPException
 	{
 
 		ElGamalKeyPairGenerator elGamalKeyPairGenerator = new ElGamalKeyPairGenerator();
 		ElGamalParametersGenerator elGamalParametersGenerator = new ElGamalParametersGenerator();
-		elGamalParametersGenerator.init(1024, 10, new SecureRandom());
+		elGamalParametersGenerator.init(strength, 10, new SecureRandom());
 		elGamalKeyPairGenerator.init(new ElGamalKeyGenerationParameters(new SecureRandom(), elGamalParametersGenerator.generateParameters()));
 
 
 		DSAKeyPairGenerator dsaKeyPairGenerator = new DSAKeyPairGenerator();
 		DSAParametersGenerator parametersGenerator = new DSAParametersGenerator();
-		parametersGenerator.init(1024, 10, new SecureRandom());
+		parametersGenerator.init(strength, 10, new SecureRandom());
 		dsaKeyPairGenerator.init(new DSAKeyGenerationParameters(new SecureRandom(), parametersGenerator.generateParameters()));
 
 
@@ -115,8 +127,8 @@ public class KeyGenerator
 		// versions use a default of 0x60.
 		PBESecretKeyEncryptor pske =
 				(new BcPBESecretKeyEncryptorBuilder
-						(PGPEncryptedData.AES_256, sha1Calc, s2kcount))
-						.build(pass);
+						(PGPEncryptedData.AES_256, sha1Calc, 0xc0))
+						.build(pass.toCharArray());
 
 		// Finally, create the keyring itself. The constructor
 		// takes parameters that allow it to generate the self
